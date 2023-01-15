@@ -1,0 +1,584 @@
+library(dplyr)
+library(lubridate)
+
+#Task 1 ----------------------------------------------------------------------------------------
+#Load Data
+base_data1 <- read.csv("historicalPriceData\\ERCOT_DA_Prices_2016.csv")
+base_data2 <- read.csv("historicalPriceData\\ERCOT_DA_Prices_2017.csv")
+base_data3 <- read.csv("historicalPriceData\\ERCOT_DA_Prices_2018.csv")
+base_data4 <- read.csv("historicalPriceData\\ERCOT_DA_Prices_2019.csv")
+
+#Determine if all matching columns are named the same
+colnames(base_data1)
+colnames(base_data2)
+colnames(base_data3)
+colnames(base_data4)
+
+#Merge Data Sets
+base_data <- rbind(base_data1, base_data2)
+base_data <- rbind(base_data, base_data3)
+base_data <- rbind(base_data, base_data4)
+
+base_data <- as.data.table(base_data)
+
+#Task 2 and 3 ---------------------------------------------------------------------------------
+#Mean by Date and Settlement Point
+#Format Dates
+base_data$Month <- format(as.POSIXct(base_data$Date, format = "%Y-%m-%d %H:%M:%S"), format = "%m")
+base_data$Year <- format(as.POSIXct(base_data$Date, format = "%Y-%m-%d %H:%M:%S"), format = "%Y")
+
+#Calculate averages
+prices <- base_data %>%
+  group_by(SettlementPoint, Year, Month) %>%
+  summarise(AveragePrice = mean(Price))
+
+#Save Averages
+write.csv(prices, "AveragePriceByMonth.csv", row.names = FALSE)
+
+#Task 4 and 5 --------------------------------------------------------------------------------
+#Compute Volatility
+base_data$hub <- 0
+base_data$hub[base_data$SettlementPoint == "HB_BUSAVG" | base_data$SettlementPoint == "HB_HOUSTON" |
+                base_data$SettlementPoint == "HB_HUBAVG" | base_data$SettlementPoint == "HB_NORTH" | 
+                base_data$SettlementPoint == "HB_SOUTH" | base_data$SettlementPoint == "HB_WEST" |
+                base_data$SettlementPoint == "HB_PAN"] <- 1
+
+base_data_hubs <- base_data[which(base_data$hub == "1" & base_data$Price > 0)]
+hubs_sd <- base_data_hubs %>%
+  group_by(SettlementPoint, Year) %>%
+  summarise(HourlyVolatility = sd(log(Price)))
+
+#Save Volatility Calculations
+write.csv(hubs_sd, "HourlyVolatilityByYear.csv", row.names = FALSE)
+
+#Task 6 --------------------------------------------------------------------------------------
+#Determine Max Volatility by Year out of all hubs
+max_sd <- hubs_sd %>%
+  group_by(Year) %>%
+  slice_max(HourlyVolatility)
+
+#Save Data
+write.csv(max_sd, "MaxVolatilityByYear.csv", row.names = FALSE)
+
+#Task 7 --------------------------------------------------------------------------------------
+base_data$Hour <- format(as.POSIXct(base_data$Date, format = "%Y-%m-%d %H:%M:%S"), format = "%H")
+
+## HB_BUSAVG ----------
+HB_BUSAVG_Data <- base_data[which(base_data$SettlementPoint == "HB_BUSAVG")]
+HB_BUSAVG_Data$Date <- format(as.POSIXct(HB_BUSAVG_Data$Date, format = "%Y-%m-%d %H:%M:%S"), format = "%Y-%m-%d")
+HB_BUSAVG_Data <- select(HB_BUSAVG_Data, c(Date, Price, Hour))
+HB_BUSAVG_Data <- reshape(HB_BUSAVG_Data, idvar = "Date", timevar = "Hour", direction = "wide")
+HB_BUSAVG_Data$Variable <- "HB_BUSAVG"
+HB_BUSAVG_Data <- HB_BUSAVG_Data %>%
+  rename(X1 = Price.00,
+         X2 = Price.01,
+         X3 = Price.02,
+         X4 = Price.03,
+         X5 = Price.04,
+         X6 = Price.05,
+         X7 = Price.06,
+         X8 = Price.07,
+         X9 = Price.08,
+         X10 = Price.09,
+         X11 = Price.10,
+         X12 = Price.11,
+         X13 = Price.12,
+         X14 = Price.13,
+         X15 = Price.14,
+         X16 = Price.15,
+         X17 = Price.16,
+         X18 = Price.17,
+         X19 = Price.18,
+         X20 = Price.19,
+         X21 = Price.20,
+         X22 = Price.21,
+         X23 = Price.22,
+         X24 = Price.23)
+HB_BUSAVG_Data <- HB_BUSAVG_Data[, c(26, 1:25)]
+write.csv(HB_BUSAVG_Data, "formattedSpotHistory\\spot_HB_BUSAVG.csv", row.names = FALSE)
+## HB_HOUSTON ----------
+HB_HOUSTON_Data <- base_data[which(base_data$SettlementPoint == "HB_HOUSTON")]
+HB_HOUSTON_Data$Date <- format(as.POSIXct(HB_HOUSTON_Data$Date, format = "%Y-%m-%d %H:%M:%S"), format = "%Y-%m-%d")
+HB_HOUSTON_Data <- select(HB_HOUSTON_Data, c(Date, Price, Hour))
+HB_HOUSTON_Data <- reshape(HB_HOUSTON_Data, idvar = "Date", timevar = "Hour", direction = "wide")
+HB_HOUSTON_Data$Variable <- "HB_HOUSTON"
+HB_HOUSTON_Data <- HB_HOUSTON_Data %>%
+  rename(X1 = Price.00,
+         X2 = Price.01,
+         X3 = Price.02,
+         X4 = Price.03,
+         X5 = Price.04,
+         X6 = Price.05,
+         X7 = Price.06,
+         X8 = Price.07,
+         X9 = Price.08,
+         X10 = Price.09,
+         X11 = Price.10,
+         X12 = Price.11,
+         X13 = Price.12,
+         X14 = Price.13,
+         X15 = Price.14,
+         X16 = Price.15,
+         X17 = Price.16,
+         X18 = Price.17,
+         X19 = Price.18,
+         X20 = Price.19,
+         X21 = Price.20,
+         X22 = Price.21,
+         X23 = Price.22,
+         X24 = Price.23)
+HB_HOUSTON_Data <- HB_HOUSTON_Data[, c(26, 1:25)]
+write.csv(HB_HOUSTON_Data, "formattedSpotHistory\\spot_HB_HOUSTON.csv", row.names = FALSE)
+## HB_HUBAVG ----------
+HB_HUBAVG_Data <- base_data[which(base_data$SettlementPoint == "HB_HUBAVG")]
+HB_HUBAVG_Data$Date <- format(as.POSIXct(HB_HUBAVG_Data$Date, format = "%Y-%m-%d %H:%M:%S"), format = "%Y-%m-%d")
+HB_HUBAVG_Data <- select(HB_HUBAVG_Data, c(Date, Price, Hour))
+HB_HUBAVG_Data <- reshape(HB_HUBAVG_Data, idvar = "Date", timevar = "Hour", direction = "wide")
+HB_HUBAVG_Data$Variable <- "HB_HUBAVG"
+HB_HUBAVG_Data <- HB_HUBAVG_Data %>%
+  rename(X1 = Price.00,
+         X2 = Price.01,
+         X3 = Price.02,
+         X4 = Price.03,
+         X5 = Price.04,
+         X6 = Price.05,
+         X7 = Price.06,
+         X8 = Price.07,
+         X9 = Price.08,
+         X10 = Price.09,
+         X11 = Price.10,
+         X12 = Price.11,
+         X13 = Price.12,
+         X14 = Price.13,
+         X15 = Price.14,
+         X16 = Price.15,
+         X17 = Price.16,
+         X18 = Price.17,
+         X19 = Price.18,
+         X20 = Price.19,
+         X21 = Price.20,
+         X22 = Price.21,
+         X23 = Price.22,
+         X24 = Price.23)
+HB_HUBAVG_Data <- HB_HUBAVG_Data[, c(26, 1:25)]
+write.csv(HB_HUBAVG_Data, "formattedSpotHistory\\spot_HB_HUBAVG.csv", row.names = FALSE)
+## HB_NORTH ----------
+HB_NORTH_Data <- base_data[which(base_data$SettlementPoint == "HB_NORTH")]
+HB_NORTH_Data$Date <- format(as.POSIXct(HB_NORTH_Data$Date, format = "%Y-%m-%d %H:%M:%S"), format = "%Y-%m-%d")
+HB_NORTH_Data <- select(HB_NORTH_Data, c(Date, Price, Hour))
+HB_NORTH_Data <- reshape(HB_NORTH_Data, idvar = "Date", timevar = "Hour", direction = "wide")
+HB_NORTH_Data$Variable <- "HB_NORTH"
+HB_NORTH_Data <- HB_NORTH_Data %>%
+  rename(X1 = Price.00,
+         X2 = Price.01,
+         X3 = Price.02,
+         X4 = Price.03,
+         X5 = Price.04,
+         X6 = Price.05,
+         X7 = Price.06,
+         X8 = Price.07,
+         X9 = Price.08,
+         X10 = Price.09,
+         X11 = Price.10,
+         X12 = Price.11,
+         X13 = Price.12,
+         X14 = Price.13,
+         X15 = Price.14,
+         X16 = Price.15,
+         X17 = Price.16,
+         X18 = Price.17,
+         X19 = Price.18,
+         X20 = Price.19,
+         X21 = Price.20,
+         X22 = Price.21,
+         X23 = Price.22,
+         X24 = Price.23)
+HB_NORTH_Data <- HB_NORTH_Data[, c(26, 1:25)]
+write.csv(HB_NORTH_Data, "formattedSpotHistory\\spot_HB_NORTH.csv", row.names = FALSE)
+## HB_PAN ----------
+HB_PAN_Data <- base_data[which(base_data$SettlementPoint == "HB_PAN")]
+HB_PAN_Data$Date <- format(as.POSIXct(HB_PAN_Data$Date, format = "%Y-%m-%d %H:%M:%S"), format = "%Y-%m-%d")
+HB_PAN_Data <- select(HB_PAN_Data, c(Date, Price, Hour))
+HB_PAN_Data <- reshape(HB_PAN_Data, idvar = "Date", timevar = "Hour", direction = "wide")
+HB_PAN_Data$Variable <- "HB_PAN"
+HB_PAN_Data <- HB_PAN_Data %>%
+  rename(X1 = Price.00,
+         X2 = Price.01,
+         X3 = Price.02,
+         X4 = Price.03,
+         X5 = Price.04,
+         X6 = Price.05,
+         X7 = Price.06,
+         X8 = Price.07,
+         X9 = Price.08,
+         X10 = Price.09,
+         X11 = Price.10,
+         X12 = Price.11,
+         X13 = Price.12,
+         X14 = Price.13,
+         X15 = Price.14,
+         X16 = Price.15,
+         X17 = Price.16,
+         X18 = Price.17,
+         X19 = Price.18,
+         X20 = Price.19,
+         X21 = Price.20,
+         X22 = Price.21,
+         X23 = Price.22,
+         X24 = Price.23)
+HB_PAN_Data <- HB_PAN_Data[, c(26, 1:25)]
+write.csv(HB_PAN_Data, "formattedSpotHistory\\spot_HB_PAN.csv", row.names = FALSE)
+## HB_SOUTH ----------
+HB_SOUTH_Data <- base_data[which(base_data$SettlementPoint == "HB_SOUTH")]
+HB_SOUTH_Data$Date <- format(as.POSIXct(HB_SOUTH_Data$Date, format = "%Y-%m-%d %H:%M:%S"), format = "%Y-%m-%d")
+HB_SOUTH_Data <- select(HB_SOUTH_Data, c(Date, Price, Hour))
+HB_SOUTH_Data <- reshape(HB_SOUTH_Data, idvar = "Date", timevar = "Hour", direction = "wide")
+HB_SOUTH_Data$Variable <- "HB_SOUTH"
+HB_SOUTH_Data <- HB_SOUTH_Data %>%
+  rename(X1 = Price.00,
+         X2 = Price.01,
+         X3 = Price.02,
+         X4 = Price.03,
+         X5 = Price.04,
+         X6 = Price.05,
+         X7 = Price.06,
+         X8 = Price.07,
+         X9 = Price.08,
+         X10 = Price.09,
+         X11 = Price.10,
+         X12 = Price.11,
+         X13 = Price.12,
+         X14 = Price.13,
+         X15 = Price.14,
+         X16 = Price.15,
+         X17 = Price.16,
+         X18 = Price.17,
+         X19 = Price.18,
+         X20 = Price.19,
+         X21 = Price.20,
+         X22 = Price.21,
+         X23 = Price.22,
+         X24 = Price.23)
+HB_SOUTH_Data <- HB_SOUTH_Data[, c(26, 1:25)]
+write.csv(HB_SOUTH_Data, "formattedSpotHistory\\spot_HB_SOUTH.csv", row.names = FALSE)
+## HB_WEST ----------
+HB_WEST_Data <- base_data[which(base_data$SettlementPoint == "HB_WEST")]
+HB_WEST_Data$Date <- format(as.POSIXct(HB_WEST_Data$Date, format = "%Y-%m-%d %H:%M:%S"), format = "%Y-%m-%d")
+HB_WEST_Data <- select(HB_WEST_Data, c(Date, Price, Hour))
+HB_WEST_Data <- reshape(HB_WEST_Data, idvar = "Date", timevar = "Hour", direction = "wide")
+HB_WEST_Data$Variable <- "HB_WEST"
+HB_WEST_Data <- HB_WEST_Data %>%
+  rename(X1 = Price.00,
+         X2 = Price.01,
+         X3 = Price.02,
+         X4 = Price.03,
+         X5 = Price.04,
+         X6 = Price.05,
+         X7 = Price.06,
+         X8 = Price.07,
+         X9 = Price.08,
+         X10 = Price.09,
+         X11 = Price.10,
+         X12 = Price.11,
+         X13 = Price.12,
+         X14 = Price.13,
+         X15 = Price.14,
+         X16 = Price.15,
+         X17 = Price.16,
+         X18 = Price.17,
+         X19 = Price.18,
+         X20 = Price.19,
+         X21 = Price.20,
+         X22 = Price.21,
+         X23 = Price.22,
+         X24 = Price.23)
+HB_WEST_Data <- HB_WEST_Data[, c(26, 1:25)]
+write.csv(HB_WEST_Data, "formattedSpotHistory\\spot_HB_WEST.csv", row.names = FALSE)
+## LZ_AEN ----------
+LZ_AEN_Data <- base_data[which(base_data$SettlementPoint == "LZ_AEN")]
+LZ_AEN_Data$Date <- format(as.POSIXct(LZ_AEN_Data$Date, format = "%Y-%m-%d %H:%M:%S"), format = "%Y-%m-%d")
+LZ_AEN_Data <- select(LZ_AEN_Data, c(Date, Price, Hour))
+LZ_AEN_Data <- reshape(LZ_AEN_Data, idvar = "Date", timevar = "Hour", direction = "wide")
+LZ_AEN_Data$Variable <- "LZ_AEN"
+LZ_AEN_Data <- LZ_AEN_Data %>%
+  rename(X1 = Price.00,
+         X2 = Price.01,
+         X3 = Price.02,
+         X4 = Price.03,
+         X5 = Price.04,
+         X6 = Price.05,
+         X7 = Price.06,
+         X8 = Price.07,
+         X9 = Price.08,
+         X10 = Price.09,
+         X11 = Price.10,
+         X12 = Price.11,
+         X13 = Price.12,
+         X14 = Price.13,
+         X15 = Price.14,
+         X16 = Price.15,
+         X17 = Price.16,
+         X18 = Price.17,
+         X19 = Price.18,
+         X20 = Price.19,
+         X21 = Price.20,
+         X22 = Price.21,
+         X23 = Price.22,
+         X24 = Price.23)
+LZ_AEN_Data <- LZ_AEN_Data[, c(26, 1:25)]
+write.csv(LZ_AEN_Data, "formattedSpotHistory\\spot_LZ_AEN.csv", row.names = FALSE)
+## LZ_CPS ----------
+LZ_CPS_Data <- base_data[which(base_data$SettlementPoint == "LZ_CPS")]
+LZ_CPS_Data$Date <- format(as.POSIXct(LZ_CPS_Data$Date, format = "%Y-%m-%d %H:%M:%S"), format = "%Y-%m-%d")
+LZ_CPS_Data <- select(LZ_CPS_Data, c(Date, Price, Hour))
+LZ_CPS_Data <- reshape(LZ_CPS_Data, idvar = "Date", timevar = "Hour", direction = "wide")
+LZ_CPS_Data$Variable <- "LZ_CPS"
+LZ_CPS_Data <- LZ_CPS_Data %>%
+  rename(X1 = Price.00,
+         X2 = Price.01,
+         X3 = Price.02,
+         X4 = Price.03,
+         X5 = Price.04,
+         X6 = Price.05,
+         X7 = Price.06,
+         X8 = Price.07,
+         X9 = Price.08,
+         X10 = Price.09,
+         X11 = Price.10,
+         X12 = Price.11,
+         X13 = Price.12,
+         X14 = Price.13,
+         X15 = Price.14,
+         X16 = Price.15,
+         X17 = Price.16,
+         X18 = Price.17,
+         X19 = Price.18,
+         X20 = Price.19,
+         X21 = Price.20,
+         X22 = Price.21,
+         X23 = Price.22,
+         X24 = Price.23)
+LZ_CPS_Data <- LZ_CPS_Data[, c(26, 1:25)]
+write.csv(LZ_CPS_Data, "formattedSpotHistory\\spot_LZ_CPS.csv", row.names = FALSE)
+## LZ_HOUSTON ----------
+LZ_HOUSTON_Data <- base_data[which(base_data$SettlementPoint == "LZ_HOUSTON")]
+LZ_HOUSTON_Data$Date <- format(as.POSIXct(LZ_HOUSTON_Data$Date, format = "%Y-%m-%d %H:%M:%S"), format = "%Y-%m-%d")
+LZ_HOUSTON_Data <- select(LZ_HOUSTON_Data, c(Date, Price, Hour))
+LZ_HOUSTON_Data <- reshape(LZ_HOUSTON_Data, idvar = "Date", timevar = "Hour", direction = "wide")
+LZ_HOUSTON_Data$Variable <- "LZ_HOUSTON"
+LZ_HOUSTON_Data <- LZ_HOUSTON_Data %>%
+  rename(X1 = Price.00,
+         X2 = Price.01,
+         X3 = Price.02,
+         X4 = Price.03,
+         X5 = Price.04,
+         X6 = Price.05,
+         X7 = Price.06,
+         X8 = Price.07,
+         X9 = Price.08,
+         X10 = Price.09,
+         X11 = Price.10,
+         X12 = Price.11,
+         X13 = Price.12,
+         X14 = Price.13,
+         X15 = Price.14,
+         X16 = Price.15,
+         X17 = Price.16,
+         X18 = Price.17,
+         X19 = Price.18,
+         X20 = Price.19,
+         X21 = Price.20,
+         X22 = Price.21,
+         X23 = Price.22,
+         X24 = Price.23)
+LZ_HOUSTON_Data <- LZ_HOUSTON_Data[, c(26, 1:25)]
+write.csv(LZ_HOUSTON_Data, "formattedSpotHistory\\spot_LZ_HOUSTON.csv", row.names = FALSE)
+## LZ_LCRA ----------
+LZ_LCRA_Data <- base_data[which(base_data$SettlementPoint == "LZ_LCRA")]
+LZ_LCRA_Data$Date <- format(as.POSIXct(LZ_LCRA_Data$Date, format = "%Y-%m-%d %H:%M:%S"), format = "%Y-%m-%d")
+LZ_LCRA_Data <- select(LZ_LCRA_Data, c(Date, Price, Hour))
+LZ_LCRA_Data <- reshape(LZ_LCRA_Data, idvar = "Date", timevar = "Hour", direction = "wide")
+LZ_LCRA_Data$Variable <- "LZ_LCRA"
+LZ_LCRA_Data <- LZ_LCRA_Data %>%
+  rename(X1 = Price.00,
+         X2 = Price.01,
+         X3 = Price.02,
+         X4 = Price.03,
+         X5 = Price.04,
+         X6 = Price.05,
+         X7 = Price.06,
+         X8 = Price.07,
+         X9 = Price.08,
+         X10 = Price.09,
+         X11 = Price.10,
+         X12 = Price.11,
+         X13 = Price.12,
+         X14 = Price.13,
+         X15 = Price.14,
+         X16 = Price.15,
+         X17 = Price.16,
+         X18 = Price.17,
+         X19 = Price.18,
+         X20 = Price.19,
+         X21 = Price.20,
+         X22 = Price.21,
+         X23 = Price.22,
+         X24 = Price.23)
+LZ_LCRA_Data <- LZ_LCRA_Data[, c(26, 1:25)]
+write.csv(LZ_LCRA_Data, "formattedSpotHistory\\spot_LZ_LCRA.csv", row.names = FALSE)
+## LZ_NORTH ----------
+LZ_NORTH_Data <- base_data[which(base_data$SettlementPoint == "LZ_NORTH")]
+LZ_NORTH_Data$Date <- format(as.POSIXct(LZ_NORTH_Data$Date, format = "%Y-%m-%d %H:%M:%S"), format = "%Y-%m-%d")
+LZ_NORTH_Data <- select(LZ_NORTH_Data, c(Date, Price, Hour))
+LZ_NORTH_Data <- reshape(LZ_NORTH_Data, idvar = "Date", timevar = "Hour", direction = "wide")
+LZ_NORTH_Data$Variable <- "LZ_NORTH"
+LZ_NORTH_Data <- LZ_NORTH_Data %>%
+  rename(X1 = Price.00,
+         X2 = Price.01,
+         X3 = Price.02,
+         X4 = Price.03,
+         X5 = Price.04,
+         X6 = Price.05,
+         X7 = Price.06,
+         X8 = Price.07,
+         X9 = Price.08,
+         X10 = Price.09,
+         X11 = Price.10,
+         X12 = Price.11,
+         X13 = Price.12,
+         X14 = Price.13,
+         X15 = Price.14,
+         X16 = Price.15,
+         X17 = Price.16,
+         X18 = Price.17,
+         X19 = Price.18,
+         X20 = Price.19,
+         X21 = Price.20,
+         X22 = Price.21,
+         X23 = Price.22,
+         X24 = Price.23)
+LZ_NORTH_Data <- LZ_NORTH_Data[, c(26, 1:25)]
+write.csv(LZ_NORTH_Data, "formattedSpotHistory\\spot_LZ_NORTH.csv", row.names = FALSE)
+## LZ_RAYBN ----------
+LZ_RAYBN_Data <- base_data[which(base_data$SettlementPoint == "LZ_RAYBN")]
+LZ_RAYBN_Data$Date <- format(as.POSIXct(LZ_RAYBN_Data$Date, format = "%Y-%m-%d %H:%M:%S"), format = "%Y-%m-%d")
+LZ_RAYBN_Data <- select(LZ_RAYBN_Data, c(Date, Price, Hour))
+LZ_RAYBN_Data <- reshape(LZ_RAYBN_Data, idvar = "Date", timevar = "Hour", direction = "wide")
+LZ_RAYBN_Data$Variable <- "LZ_RAYBN"
+LZ_RAYBN_Data <- LZ_RAYBN_Data %>%
+  rename(X1 = Price.00,
+         X2 = Price.01,
+         X3 = Price.02,
+         X4 = Price.03,
+         X5 = Price.04,
+         X6 = Price.05,
+         X7 = Price.06,
+         X8 = Price.07,
+         X9 = Price.08,
+         X10 = Price.09,
+         X11 = Price.10,
+         X12 = Price.11,
+         X13 = Price.12,
+         X14 = Price.13,
+         X15 = Price.14,
+         X16 = Price.15,
+         X17 = Price.16,
+         X18 = Price.17,
+         X19 = Price.18,
+         X20 = Price.19,
+         X21 = Price.20,
+         X22 = Price.21,
+         X23 = Price.22,
+         X24 = Price.23)
+LZ_RAYBN_Data <- LZ_RAYBN_Data[, c(26, 1:25)]
+write.csv(LZ_RAYBN_Data, "formattedSpotHistory\\spot_LZ_RAYBN.csv", row.names = FALSE)
+## LZ_SOUTH ----------
+LZ_SOUTH_Data <- base_data[which(base_data$SettlementPoint == "LZ_SOUTH")]
+LZ_SOUTH_Data$Date <- format(as.POSIXct(LZ_SOUTH_Data$Date, format = "%Y-%m-%d %H:%M:%S"), format = "%Y-%m-%d")
+LZ_SOUTH_Data <- select(LZ_SOUTH_Data, c(Date, Price, Hour))
+LZ_SOUTH_Data <- reshape(LZ_SOUTH_Data, idvar = "Date", timevar = "Hour", direction = "wide")
+LZ_SOUTH_Data$Variable <- "LZ_SOUTH"
+LZ_SOUTH_Data <- LZ_SOUTH_Data %>%
+  rename(X1 = Price.00,
+         X2 = Price.01,
+         X3 = Price.02,
+         X4 = Price.03,
+         X5 = Price.04,
+         X6 = Price.05,
+         X7 = Price.06,
+         X8 = Price.07,
+         X9 = Price.08,
+         X10 = Price.09,
+         X11 = Price.10,
+         X12 = Price.11,
+         X13 = Price.12,
+         X14 = Price.13,
+         X15 = Price.14,
+         X16 = Price.15,
+         X17 = Price.16,
+         X18 = Price.17,
+         X19 = Price.18,
+         X20 = Price.19,
+         X21 = Price.20,
+         X22 = Price.21,
+         X23 = Price.22,
+         X24 = Price.23)
+LZ_SOUTH_Data <- LZ_SOUTH_Data[, c(26, 1:25)]
+write.csv(LZ_SOUTH_Data, "formattedSpotHistory\\spot_LZ_SOUTH.csv", row.names = FALSE)
+## LZ_WEST ----------
+LZ_WEST_Data <- base_data[which(base_data$SettlementPoint == "LZ_WEST")]
+LZ_WEST_Data$Date <- format(as.POSIXct(LZ_WEST_Data$Date, format = "%Y-%m-%d %H:%M:%S"), format = "%Y-%m-%d")
+LZ_WEST_Data <- select(LZ_WEST_Data, c(Date, Price, Hour))
+LZ_WEST_Data <- reshape(LZ_WEST_Data, idvar = "Date", timevar = "Hour", direction = "wide")
+LZ_WEST_Data$Variable <- "LZ_WEST"
+LZ_WEST_Data <- LZ_WEST_Data %>%
+  rename(X1 = Price.00,
+         X2 = Price.01,
+         X3 = Price.02,
+         X4 = Price.03,
+         X5 = Price.04,
+         X6 = Price.05,
+         X7 = Price.06,
+         X8 = Price.07,
+         X9 = Price.08,
+         X10 = Price.09,
+         X11 = Price.10,
+         X12 = Price.11,
+         X13 = Price.12,
+         X14 = Price.13,
+         X15 = Price.14,
+         X16 = Price.15,
+         X17 = Price.16,
+         X18 = Price.17,
+         X19 = Price.18,
+         X20 = Price.19,
+         X21 = Price.20,
+         X22 = Price.21,
+         X23 = Price.22,
+         X24 = Price.23)
+LZ_WEST_Data <- LZ_WEST_Data[, c(26, 1:25)]
+write.csv(LZ_WEST_Data, "formattedSpotHistory\\spot_LZ_WEST.csv", row.names = FALSE)
+
+#Bonus ---------------------------------------------------------------------------------------
+#Volatility Plots
+hubs_sd$Year <- as.numeric(hubs_sd$Year)
+ggplot(data = hubs_sd, aes(x = Year, y = HourlyVolatility, color = SettlementPoint)) +
+  geom_point() + geom_path() +
+  labs(x = "Year", y = "Hourly Volatility", 
+       title = "Hourly Volatility vs Year by Settlement Point")
+#Mean Plots
+prices$hub <- 0
+prices$hub[prices$SettlementPoint == "HB_BUSAVG" | prices$SettlementPoint == "HB_HOUSTON" |
+             prices$SettlementPoint == "HB_HUBAVG" | prices$SettlementPoint == "HB_NORTH" | 
+             prices$SettlementPoint == "HB_SOUTH" | prices$SettlementPoint == "HB_WEST" |
+             prices$SettlementPoint == "HB_PAN"] <- 1
+prices_HB <- prices[which.max(prices$hub)]
+prices_LZ <- prices[which(prices$hub == "0")]
+
+#I would need to have some way to separate the hubs from the load zones. Once that was done, I would create a plot
+#similar to the volatility plot as coded above
+
+
+
+
+
